@@ -224,6 +224,9 @@
       getHomeDirectory: function() {
         return bkUtils.getHomeDirectory();
       },
+      updateDocumentModelFromDOM: function() {
+        return bkUtils.updateDocumentModelFromDOM();
+      },
 
       // utils (bkCore)
       setNotebookImporter: function(format, importer) {

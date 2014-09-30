@@ -96,6 +96,11 @@
       delay: function(ms) {
         return angularUtils.delay(ms);
       },
+      updateDocumentModelFromDOM: function(elem) {
+        // 1) find the cell that contains elem
+        // 2) convert that part of the DOM to a string
+        // 3) set the result.object to that string.
+      },
 
       // beaker server involved utils
       getHomeDirectory: function() {
