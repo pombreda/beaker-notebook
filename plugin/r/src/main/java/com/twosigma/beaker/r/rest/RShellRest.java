@@ -234,7 +234,8 @@ public class RShellRest {
       if (init) {
         tryCode = code;
       } else {
-        con.eval("do.call(svg,c(list('" + file + "'), beaker::saved_svg_options))");
+	// XXX include svg_options
+	con.eval("devSVG(xmlHeader=FALSE, file='" + file + "')");
         tryCode = "beaker_eval_=withVisible(try({" + code + "\n},silent=TRUE))";
       }
       REXP result = con.eval(tryCode);
@@ -339,7 +340,8 @@ public class RShellRest {
     try {
       String initCode = "devtools::load_all(Sys.getenv('beaker_r_init'), " +
           "quiet=TRUE, export_all=FALSE)\n" +
-          "beaker:::set_session('" + sessionId + "')\n";
+          "beaker:::set_session('" + sessionId + "')\n" +
+	  "library(RSvgDevice)\n";
       REXP result = con.eval(initCode);
     } catch(Exception e) { e.printStackTrace(); }
   }
@@ -351,15 +353,10 @@ public class RShellRest {
     return this.shells.get(shellID);
   }
 
-  // R SVG has ids that need to be made globally unique.  Plus we
-  // remove the xml version string, and any blank data attributes,
-  // since these just cause errors on chrome's console.
+  // There is a bug, not sure if it's in firefox or the SVG driver but
+  // the text on the Y axis is cropped just a bit.  This includes it.
   private String fixSvgResults(String xml) {
-    String unique = "b" + Integer.toString(svgUniqueCounter++);
-    xml = xml.replace("id=\"glyph", "id=\"" + unique + "glyph");
-    xml = xml.replace("xlink:href=\"#glyph", "xlink:href=\"#" + unique + "glyph");
-    xml = xml.replace("d=\"\"", "");
-    xml = xml.replace("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", "");
+    xml = xml.replace(" viewBox=\"0,0,", " viewBox=\"-3.5,0,");
     return xml;
   }
 
@@ -371,6 +368,12 @@ public class RShellRest {
         fis.read(data);
         fis.close();
         String contents = new String(data, "UTF-8");
+        // Unfortunately this SVG driver always writes an output file,
+        // even if there was no graph.  We recognize this empty file
+        // just by counting lines.
+	if (4 >= contents.split("\n").length) {
+	  return false;
+	}
         obj.finished(fixSvgResults(contents));
         return true;
       } catch (FileNotFoundException e) {
